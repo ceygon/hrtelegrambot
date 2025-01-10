@@ -7,7 +7,7 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
-ABACUS_CHAT_URL = os.environ.get('ABACUS_URL')
+ABACUS_CHAT_URL = "https://apps.abacus.ai/chatllm/9d43b9ec0"  # Direkt chat URL'si
 
 def send_telegram_message(chat_id, text):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
@@ -32,21 +32,31 @@ def webhook():
         logging.info(f"Extracted - chat_id: {chat_id}, text: {text}")
 
         if text and chat_id:
-            logging.info(f"Sending request to Abacus.AI: {ABACUS_CHAT_URL}")
+            # Chat isteği gönder
+            chat_payload = {
+                "messages": [{"role": "user", "content": text}],
+                "stream": False
+            }
+            
+            logging.info(f"Sending request to Abacus Chat: {ABACUS_CHAT_URL}")
             response = requests.post(
                 ABACUS_CHAT_URL,
-                json={"message": text}
+                json=chat_payload
             )
             
-            logging.info(f"Abacus.AI response: {response.status_code} - {response.text}")
+            logging.info(f"Abacus Chat response: {response.status_code} - {response.text}")
             
             if response.ok:
-                bot_response = response.json().get('response', 'Üzgünüm, bir hata oluştu.')
-                logging.info(f"Bot response: {bot_response}")
-                send_telegram_message(chat_id, bot_response)
+                try:
+                    bot_response = response.json().get('message', 'Üzgünüm, bir hata oluştu.')
+                    logging.info(f"Bot response: {bot_response}")
+                    send_telegram_message(chat_id, bot_response)
+                except Exception as e:
+                    logging.error(f"Error parsing response: {str(e)}")
+                    send_telegram_message(chat_id, "Üzgünüm, yanıtı işlerken bir hata oluştu.")
             else:
                 error_msg = "Üzgünüm, şu anda yanıt veremiyorum. Lütfen daha sonra tekrar deneyin."
-                logging.error(f"Abacus.AI error: {response.text}")
+                logging.error(f"Abacus Chat error: {response.text}")
                 send_telegram_message(chat_id, error_msg)
 
         return jsonify({"ok": True})
