@@ -8,7 +8,7 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
-ABACUS_CHAT_URL = "https://apps.abacus.ai/chat-api/v1/9d43b9ec0/chat"  # URL güncellendi
+ABACUS_CHAT_URL = "https://apps.abacus.ai/chatllm/9d43b9ec0/message"  # URL güncellendi
 
 def send_telegram_message(chat_id, text):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
@@ -35,7 +35,8 @@ def webhook():
         if text and chat_id:
             # Chat isteği gönder
             chat_payload = {
-                "text": text,
+                "message": text,
+                "conversation_id": str(chat_id),  # Her kullanıcı için ayrı konuşma
                 "stream": False
             }
             
@@ -53,7 +54,7 @@ def webhook():
             if response.ok:
                 try:
                     response_data = response.json()
-                    bot_response = response_data.get('response', response_data.get('text', 'Üzgünüm, bir hata oluştu.'))
+                    bot_response = response_data.get('message', response_data.get('response', 'Üzgünüm, bir hata oluştu.'))
                     logging.info(f"Bot response: {bot_response}")
                     send_telegram_message(chat_id, bot_response)
                 except Exception as e:
