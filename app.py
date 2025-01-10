@@ -8,7 +8,7 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
-ABACUS_CHAT_URL = "https://apps.abacus.ai/chatllm/9d43b9ec0/message"  # URL güncellendi
+ABACUS_CHAT_URL = "https://api.abacus.ai/api/v0/deployment/d497588e2/chat"  # URL güncellendi
 
 def send_telegram_message(chat_id, text):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
@@ -35,18 +35,25 @@ def webhook():
         if text and chat_id:
             # Chat isteği gönder
             chat_payload = {
-                "message": text,
-                "conversation_id": str(chat_id),  # Her kullanıcı için ayrı konuşma
+                "inputs": {
+                    "message": text
+                },
+                "conversation_id": str(chat_id),
                 "stream": False
             }
             
             logging.info(f"Sending request to Abacus Chat: {ABACUS_CHAT_URL}")
             logging.info(f"Request payload: {json.dumps(chat_payload)}")
             
+            headers = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+            
             response = requests.post(
                 ABACUS_CHAT_URL,
                 json=chat_payload,
-                headers={'Content-Type': 'application/json'}
+                headers=headers
             )
             
             logging.info(f"Abacus Chat response: {response.status_code} - {response.text}")
@@ -54,7 +61,7 @@ def webhook():
             if response.ok:
                 try:
                     response_data = response.json()
-                    bot_response = response_data.get('message', response_data.get('response', 'Üzgünüm, bir hata oluştu.'))
+                    bot_response = response_data.get('response', response_data.get('message', response_data.get('text', 'Üzgünüm, bir hata oluştu.')))
                     logging.info(f"Bot response: {bot_response}")
                     send_telegram_message(chat_id, bot_response)
                 except Exception as e:
