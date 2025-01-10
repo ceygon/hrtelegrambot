@@ -8,7 +8,7 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
-ABACUS_BASE_URL = "https://pa002.abacus.ai"  # Base URL güncellendi
+API_TOKEN = os.environ.get('ABACUS_API_TOKEN')  # Bunu Render.com'da ekleyeceğiz
 DEPLOYMENT_ID = "d497588e2"
 
 def send_telegram_message(chat_id, text):
@@ -34,31 +34,30 @@ def webhook():
         logging.info(f"Extracted - chat_id: {chat_id}, text: {text}")
 
         if text and chat_id:
-            # Chat isteği gönder
-            chat_url = f"{ABACUS_BASE_URL}/deployment/{DEPLOYMENT_ID}/predict"
+            # Prediction isteği gönder
+            predict_url = f"https://api.abacus.ai/api/v0/deployment/{DEPLOYMENT_ID}/predict"
             
-            chat_payload = {
+            headers = {
+                'Authorization': f'Bearer {API_TOKEN}',
+                'Content-Type': 'application/json'
+            }
+            
+            predict_payload = {
                 "inputs": {
-                    "message": text,
-                    "conversation_id": str(chat_id)
+                    "message": text
                 }
             }
             
-            logging.info(f"Sending request to Abacus Chat: {chat_url}")
-            logging.info(f"Request payload: {json.dumps(chat_payload)}")
-            
-            headers = {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            }
+            logging.info(f"Sending request to Abacus API: {predict_url}")
+            logging.info(f"Request payload: {json.dumps(predict_payload)}")
             
             response = requests.post(
-                chat_url,
-                json=chat_payload,
-                headers=headers
+                predict_url,
+                headers=headers,
+                json=predict_payload
             )
             
-            logging.info(f"Abacus Chat response: {response.status_code} - {response.text}")
+            logging.info(f"Abacus API response: {response.status_code} - {response.text}")
             
             if response.ok:
                 try:
@@ -71,7 +70,7 @@ def webhook():
                     send_telegram_message(chat_id, "Üzgünüm, yanıtı işlerken bir hata oluştu.")
             else:
                 error_msg = "Üzgünüm, şu anda yanıt veremiyorum. Lütfen daha sonra tekrar deneyin."
-                logging.error(f"Abacus Chat error: {response.text}")
+                logging.error(f"Abacus API error: {response.text}")
                 send_telegram_message(chat_id, error_msg)
 
         return jsonify({"ok": True})
