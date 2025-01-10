@@ -8,7 +8,7 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
-ABACUS_URL = "https://api.abacus.ai/api/v0/inference"
+ABACUS_URL = "https://pa002.abacus.ai/v0/deployment/d497588e2/predict"  # URL güncellendi
 
 def send_telegram_message(chat_id, text):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
@@ -35,7 +35,6 @@ def webhook():
         if text and chat_id:
             # Chat isteği gönder
             chat_payload = {
-                "deployment_id": "d497588e2",
                 "inputs": {
                     "message": text,
                     "conversation_id": str(chat_id)
